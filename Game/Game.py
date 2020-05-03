@@ -7,6 +7,9 @@ from Engine.Colors import Palette
 from Engine.Store import store
 from Engine.Systems.Display import Display
 from Engine.Systems.Chunk import Chunk
+from Engine.Systems.Mesh import Mesh
+from Engine.Systems.DoubleBuffer import DoubleBuffer
+from Engine.Systems.Animation2D import Animation2D
 from Game.Systems.Camera import Camera
 from Game.Systems.World import World
 from Game.Systems.PlayerController import PlayerController
@@ -15,7 +18,6 @@ from Game.Systems.Stamina import Stamina
 from Game.Systems.Spellbar import Spellbar
 from Game.Systems.Clickable import Clickable
 from Game.Systems.Vision import Vision
-from Engine.Systems.DoubleBuffer import DoubleBuffer
 
 class Arena(object):
     def __init__(self):
@@ -66,10 +68,12 @@ class Arena(object):
             #Display(),
             #Clickable(),
             PlayerController(),
-            #Vision(),
+            Vision(),
             #Combat(),
             #Stamina(),
             #Spellbar(),
+            Animation2D(),
+            Mesh(),
             DoubleBuffer(),
         ])
 

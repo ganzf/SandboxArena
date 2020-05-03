@@ -70,6 +70,7 @@ class PlayerController(object):
         self.mouse_color = self.game.palette.black
         self.mouse_down = False
         self.keyboard = Keyboard()
+        self.d = None
 
     def run(self, elapsed, events):
         if self.mouse_clicked > 0:
@@ -163,29 +164,53 @@ class PlayerController(object):
                     if player_alive.target:
                         player_alive.target = None
 
+            
+            d = self.d
             if self.keyboard.right_key.state == Quadstate.DOWN or self.keyboard.right_key.state == Quadstate.GOING_DOWN:
                 if not player_alive.destination:
                     player_alive.destination = Point(t.position.x, t.position.y)
                 player_alive.destination.x += 1
                 player_alive.destination.y -= 1
+                d = 'r'
                 
             if self.keyboard.left_key.state == Quadstate.DOWN or self.keyboard.left_key.state == Quadstate.GOING_DOWN:
                 if not player_alive.destination:
                     player_alive.destination = Point(t.position.x, t.position.y)
                 player_alive.destination.x -= 1
                 player_alive.destination.y += 1
+                d = 'l'
 
             if self.keyboard.up_key.state == Quadstate.DOWN or self.keyboard.up_key.state == Quadstate.GOING_DOWN:
                 if not player_alive.destination:
                     player_alive.destination = Point(t.position.x, t.position.y)
                 player_alive.destination.x -= 1
                 player_alive.destination.y -= 1
+                if d == 'r':
+                    d = 'tr'
+                elif d == 'l':
+                    d = 'tl'
+                else:
+                    d = 't'
 
             if self.keyboard.down_key.state == Quadstate.DOWN or self.keyboard.down_key.state == Quadstate.GOING_DOWN:
                 if not player_alive.destination:
                     player_alive.destination = Point(t.position.x, t.position.y)
                 player_alive.destination.x += 1
                 player_alive.destination.y += 1
+                if d == 'r':
+                    d = 'br'
+                elif d == 'l':
+                    d = 'bl'
+                else:
+                    d = 'b'
+
+            mesh = self.player.get("Mesh")
+            if mesh:
+                if d == self.d:
+                    mesh.idle = True
+                else:
+                    mesh.idle = False
+                    mesh.animation = d
 
             skills = self.player.components.get("Skills")
             if skills:

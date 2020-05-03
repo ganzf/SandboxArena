@@ -38,7 +38,7 @@ class Camera(ASystem):
         #store.begin_time("CameraPerEntityTime")
         entity = t._parent
         color = self.palette.debug_color
-        
+        offset = camera_info.offset
         # Only required for chunks, not for all objects
         # Therefore, it is a chunk loading optimization
         # if pos.distance(t.position) <= drawing_distance:
@@ -53,18 +53,19 @@ class Camera(ASystem):
 
             # Adapt to camera position
             # Where is the camera in an iso proj:
-            iso_cam_x = (pos.x - pos.y)
-            iso_cam_y = (pos.x + pos.y) / 2
+            iso_cam_x = (pos.x - pos.y) + offset.x
+            iso_cam_y = (pos.x + pos.y) / 2 + offset.y
 
             x += (x - iso_cam_x)
-            y += (y - iso_cam_y)
+            y += (y - iso_cam_y) - t.position.z
 
             # Scale to world
             x *= world_scale / 2
             y *= world_scale / 2
 
+            # Adapt to camera z level
             
-
+            
             # Center on screen
             x += camera_info.width / 2
             y += camera_info.height / 2
@@ -92,6 +93,8 @@ class Camera(ASystem):
     def render_transform(self, t, world):
         if not t.screen:
             return
+        if not store.debug and t._parent.get("Mesh"):
+            return
         world_scale = world.scale
         half_world_scale = world_scale / 2
         box_width = half_world_scale * t.scale.x
@@ -99,7 +102,7 @@ class Camera(ASystem):
         # Top corner of tile
         x = t.screen.x
         y = t.screen.y
-        pygame.gfxdraw.polygon(self.screen, [
+        pygame.gfxdraw.filled_polygon(self.screen, [
             (x, y),
             (x + box_width, y + box_width / 2),
             (x, y + box_width),
@@ -109,18 +112,32 @@ class Camera(ASystem):
         box_height = half_world_scale * t.scale.z
         top = y - box_height
         top_color = t.color
-        
-        self.line(x, y, x, y - box_height, t.color)
-        self.line(x + box_width, y + box_width / 2, x + box_width, y + box_width / 2 - box_height, t.color)
-        self.line(x, y + box_width, x, y + box_width - box_height, t.color)
-        self.line(x - box_width, y + box_width / 2, x - box_width, y + box_width / 2 - box_height, t.color)
 
-        pygame.gfxdraw.polygon(self.screen, [
+        # X face
+        pygame.gfxdraw.filled_polygon(self.screen, [
+            (x, y + box_width),
+            (x, y - box_height),
+            (x + box_width, y + box_width / 2 - box_height),
+            (x + box_width, y + box_width / 2)
+        ], t.color)
+
+        # Y Face
+        pygame.gfxdraw.filled_polygon(self.screen, [
+            (x, y + box_width),
+            (x, y - box_height),
+            (x - box_width, y + box_width / 2 - box_height),
+            (x - box_width, y + box_width / 2)
+        ], t.color)
+
+
+
+        pygame.gfxdraw.filled_polygon(self.screen, [
             (x, y - box_height),
             (x + box_width, y + box_width / 2 - box_height),
             (x, y + box_width - box_height),
             (x - box_width, y + box_width / 2 - box_height)
         ], top_color)
+
         store.end_time("CameraPerEntityDraw")
 
 
@@ -146,18 +163,8 @@ class Camera(ASystem):
             world_scale = world.scale
             half_world_scale = world_scale / 2
             
-            pos = camera_info.target.getPosition()
-            pos.z = 10
-            
-            # Vision system
-            before_mod = Point(pos.x, pos.y)
-            if camera_info.pos_modifier:
-                mod = camera_info.pos_modifier
-                vec = mod.get('vec')
-                dist = mod.get('distance')
-                if vec and dist:
-                    pos.x += vec.x * dist * 2
-                    pos.y += vec.y * dist
+            target_pos = camera_info.target.getPosition()
+            pos = Point(target_pos.x, target_pos.y, target_pos.z + 1)
             
             screen_center = Point(int(camera_info.width / 2), int(camera_info.height / 2))
             if store.debug:
@@ -167,19 +174,36 @@ class Camera(ASystem):
             # mouse = pygame.mouse.get_pos()
             # mouse = ShapelyPoint(mouse[0], mouse[1])
 
+            # Vision system
+            offset = Point(0, 0)
+            if camera_info.pos_modifier:
+                mod = camera_info.pos_modifier
+                vec = mod.get('vec')
+                dist = mod.get('distance')
+                if vec and dist:
+                    offset.x = vec.x * dist
+                    offset.y = vec.y * dist / 2
+                    camera_info.offset = offset
+            
+            # Adapt to target z position
+            offset.y -= (pos.z)
 
             visibles = store.visibles.get_list()
             for visible in visibles:
-                chunk = visible._parent.getUnsafe("Chunk")
-                chunk_t = visible._parent.getUnsafe("Transform")
-                self.update_transform(chunk_t, pos, world, camera_info)
-                if store.debug:
-                    self.render_transform(chunk_t, world)
-                transforms = list(map(lambda chunk_child: chunk_child.getUnsafe("Transform"), chunk.children.values()))
-                for t in transforms:
-                    t.scale.z = 0
-                    render = self.update_transform(t, pos, world, camera_info)
-                    if render:
+                chunk = visible._parent.get("Chunk")
+                if chunk:
+                    chunk_t = visible._parent.getUnsafe("Transform")
+                    self.update_transform(chunk_t, pos, world, camera_info)
+                    if store.debug:
+                        self.render_transform(chunk_t, world)
+                    transforms = list(map(lambda chunk_child: chunk_child.getUnsafe("Transform"), chunk.children.values()))
+                    for t in transforms:
+                        render = self.update_transform(t, pos, world, camera_info)
+                        if render:
+                            self.render_transform(t, world)
+                else:
+                    t = visible._parent.get("Transform")
+                    if t and self.update_transform(t, pos, world, camera_info):
                         self.render_transform(t, world)
 
 

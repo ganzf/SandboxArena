@@ -1,5 +1,5 @@
 from Engine.Components.AComponent import AComponent
-from Engine.Datastructures import Rect
+from Engine.Datastructures import Point, Rect
 
 class Camera(AComponent):
     def __init__(self):
@@ -9,5 +9,9 @@ class Camera(AComponent):
         self.fps = None
         self.zoom = 1
         self.is_filming = False
+
+        # Vision system, maybe merge into one variable
         self.pos_modifier = None
+        self.offset = Point(0, 0)
+
         self.target = None

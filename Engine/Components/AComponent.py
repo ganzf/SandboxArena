@@ -9,5 +9,4 @@ class AComponent(object):
 
     def remove(self):
         if self._parent and self.name in self._parent.components.keys():
-            print("Removed component {} from {}".format(self.name, self._parent.id))
             del self._parent.components[self.name]

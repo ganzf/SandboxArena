@@ -9,6 +9,8 @@ from Game.Entities.GameObject import GameObject
 from Engine.Components.Display import Display
 from Engine.Components.Chunkless import Chunkless
 from Game.Entities.World import World as WorldEntity
+from Engine.Components.Visible import Visible
+from Engine.Components.Mesh import Mesh
 import math
 
 class World(ASystem):
@@ -28,15 +30,44 @@ class World(ASystem):
 
         player = GameObject()
         #player.setPosition(world_info.size.w / 2, world_info.size.h / 2)
-        player.setPosition(0.5, 0.5) # Middle of square 0,0
+        player.setPosition(0, 0, 1) # Middle of square 0,0
         t = player.get("Transform")
-        t.color = palette.purple
         a = player.attach("Alive")
         player.attach("Human")
-        a.speed = 3
-        t.scale.x = 1
-        t.scale.y = 1
-        t.position.z = 1
+        player.attachComponent(Visible())
+        print("Player id {}".format(player.id))
+        a.speed = 2
+        t.scale.x = 0.5
+        t.scale.y = 0.5
+        t.scale.z = 1
+        t.color = palette.purple
+        
+        mesh = player.attachComponent(Mesh())
+        mesh.spritesheet = 'player_spritesheet.png'
+        mesh.framesize.w = 128
+        mesh.framesize.h = 128
+        # Requires explaination
+        mesh.base_frame_offset = 1.32
+
+        def load_line(name, start_x, end_x, y):
+            for index in range(end_x - start_x):
+                n = '{}_{}'.format(name, index)
+                mesh.frames[n] = Point(start_x + index, y)
+                print("Loaded {}".format(n))
+        
+        x = 3
+        load_line('b', x, 12, 0)
+        load_line('br', x, 12, 1)
+        load_line('r', x, 12, 2)
+        load_line('tr', x, 12, 3)
+        load_line('t', x, 12, 4)
+        load_line('tl', x, 12, 5)
+        load_line('l', x, 12, 6)
+        load_line('bl', x, 12, 7)
+        mesh.animation = 'b'
+
+
+
         #d = player.attachComponent(Display("./Game/assets/player.png"))
         #d.show_cell = False
         #d.reference_point = 0.97
@@ -56,6 +87,8 @@ class World(ASystem):
         tmp.x = 0
         tmp.y = 0
         self.tiles = []
+        self.waters = []
+        
         print("Seeding world {}-{} of scale {}".format(size.w, size.h, scale))
         while tmp.y < size.h:
             if tmp.x >= size.w:
@@ -79,7 +112,14 @@ class World(ASystem):
             self.tiles.append(t)
             t.scale.x = 1
             t.scale.y = 1
-            t.scale.z = 0
+            t.scale.z = 1
+            t.color = palette.white
+            t.position.z = 0
+            t.color = palette.green
+            if random.randint(0, 100) > 75:
+                self.waters.append(t)
+                t.color = palette.dark_blue
+                t.position.z = -0.2
             #d = tile.attachComponent(Display("./Game/assets/tilde.png"))
             #tiles += 1
             tmp.x += 1
@@ -102,7 +142,7 @@ class World(ASystem):
                 t.static = True
                 t.scale.x = 1
                 t.scale.y = 0.1
-                t.position.z = 1
+                t.position.z = random.randint(0, 2)
                 d = tile.attachComponent(Display("./Game/assets/tree_low.png"))
                 d.show_cell = False
                 d.reference_point = 0.99
@@ -119,41 +159,4 @@ class World(ASystem):
         
                 
     def run(self, elapsed, events=None):
-        i = 0
-        for tile in self.tiles:
-            #tile.position.z = math.sin(store.total_time + i)
-            i += 1
-        return 
-
-        if not self.camera:
-            self.camera = list(filter(lambda x: x.name == 'Camera', store.get('systems')))[0]
-        if self.old_color != self.target_color:
-            r = self.old_color[0]
-            g = self.old_color[1]
-            b = self.old_color[2]
-            r_diff = self.target_color[0] - r
-            g_diff = self.target_color[1] - g
-            b_diff = self.target_color[2] - b
-            # Fade to right color over a second
-            color = (int(r + math.ceil(r_diff / self.game.fps)), int(g + math.ceil(g_diff / self.game.fps)), int(b + math.ceil(b_diff / self.game.fps)))
-            """             debug({
-                'old': self.old_color,
-                'next': self.target_color,
-                'color': color,
-                'diffs': {
-                    'r': r_diff,
-                    'g': g_diff,
-                    'b': b_diff,
-                }
-            }) """
-            self.old_color = self.game.background_color
-            self.game.background_color = color
-        else:
-            self.old_color = self.target_color
-            self.target_color = self.game.palette.background()
-
-        debug_box = Point(0, 0)
-        debug_box = self.camera.to_screen(debug_box)
-        pygame.draw.rect(self.game.screen, self.game.palette.random(), [debug_box.x, debug_box.y, 1, 1], 0)
-
-    
+        pass

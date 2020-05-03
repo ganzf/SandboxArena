@@ -14,8 +14,6 @@ class Vision(ASystem):
     def run(self, elapsed, events):
         cameras = store.components("Camera")
         for camera in cameras:
-            e = camera._parent
-            pos = e.getPosition()
             mouse = pg.mouse.get_pos()
             mouse = Point(mouse[0], mouse[1])
             x1 = self.size[0] / 2
@@ -23,22 +21,15 @@ class Vision(ASystem):
             x2 = mouse.x
             y2 = mouse.y
             distance = mouse.distance(Point(x1, y1))
-            if distance > 25:
-                distance = 25
+            # Distance in world scale (1 = world.scale)
+            distance /= self.size[1] # In pct of screen height
+            distance = math.log(distance + 1, 2) * 2
+            if distance >= 1.5: # 1 and a half world scale
+                distance = 1.5
+
             vec = Point(x2 - x1, y2 - y1).normalize()
             camera.pos_modifier = {
                 'vec': vec,
                 'distance': distance,
             }
             #pg.draw.line(self.screen, store.get("palette").blue, [x1, y1], [x1 + vec.x * distance, y1 + vec.y * distance], 2)
-    
-            # world_scale = 20
-            # x = x1 + vec.x * distance
-            # y = y1 + vec.y * distance
-            # pg.gfxdraw.filled_polygon(self.screen, [
-            #     (x, y - world_scale / 2),
-            #     (x + world_scale, y),
-            #     (x, y + world_scale / 2),
-            #     (x - world_scale, y)
-            # ], store.get('palette').debug_color)
-
