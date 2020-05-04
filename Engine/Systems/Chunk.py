@@ -28,17 +28,25 @@ class Chunk(ASystem):
         self.loaded_this_frame = 0
         self.available_chunk_load = 0.0
         self.mask = [
+            # Distance 1
             (-1, -1), (0, -1), (1, -1),
             (-1, 0), (0, 0), (1, 0),
-            (-1, 1), (0, 1), (1, 1)
+            (-1, 1), (0, 1), (1, 1),
+            # Distance 2
+            (0, 2), (0, -2),
+            (2, 0), (-2, 0),
+            (1, 2), (1, -2),
+            (2, 1), (-2, 1),
+            (2, 2), (2, -2),
+            (-2, 2), (-2, -2)
         ]
 
     def split_world(self, world):
         # Building chunk list based on world info
         world_w = world.size.w
         world_h = world.size.h
-        chunk_h = 5
-        chunk_w = 5
+        chunk_h = 8
+        chunk_w = 8
         self.chunk_w = chunk_w
         self.chunk_h = chunk_h
         self.chunk_map = []

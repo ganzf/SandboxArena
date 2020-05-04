@@ -18,7 +18,8 @@ class EventsFactory(object):
             Event("mouseDown", "When the mouse button is pressed"),
             Event("click", 'When the mouse button is released'),
             Event("mouseMove", "When the mouse moves"),
-            Event("clickOnEntity", "When an entity is clicked by the player")
+            Event("clickOnEntity", "When an entity is clicked by the player"),
+            Event("drawMeshRequest", "When you want to draw something on the screen")
         ]
 
     def build(self, name, data=None):

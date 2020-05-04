@@ -18,6 +18,7 @@ from Game.Systems.Stamina import Stamina
 from Game.Systems.Spellbar import Spellbar
 from Game.Systems.Clickable import Clickable
 from Game.Systems.Vision import Vision
+from Game.Systems.UI import UI
 
 class Arena(object):
     def __init__(self):
@@ -69,12 +70,13 @@ class Arena(object):
             #Clickable(),
             PlayerController(),
             Vision(),
-            #Combat(),
+            Combat(),
             #Stamina(),
             #Spellbar(),
             Animation2D(),
             Mesh(),
             DoubleBuffer(),
+            UI(),
         ])
 
         quitObserver = Observer("quitObserver")
@@ -139,7 +141,7 @@ class Arena(object):
         self.avg = []
         self.time_multiplier = 1
         time_in_system = {}
-        max_time = 15
+        max_time = 60
         frame_idx = 0
         while self.carryOn and max_time >= 0:
             frame_idx += 1
@@ -189,9 +191,7 @@ class Arena(object):
         s = 0
         for f in self.avg:
             s += f
-        avg = s / len(self.avg)
-        print("Average fps: {}".format(avg))
-        print("Total time: {}".format(store.total_time))
+        avg_fps = s / len(self.avg)
         for k, v in time_in_system.items():
             s = 0
             for t in v:
@@ -207,3 +207,5 @@ class Arena(object):
                 pct = (store.times['sum'][k] / store.total_time) * 100
                 pct = round(pct, 2)
                 print("Average of timer '{}' is\t\t{} (total {} {}%)".format(k, round(v, 5), round(store.times['sum'][k], 4), pct))
+        print("Average fps: {}".format(avg_fps))
+        print("Total time: {}".format(store.total_time))

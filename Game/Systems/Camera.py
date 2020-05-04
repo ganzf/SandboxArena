@@ -2,7 +2,6 @@ import pygame
 import pygame.gfxdraw
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry.polygon import Polygon
-
 from Engine.Systems.ASystem import ASystem
 from Engine.Store import store
 from Engine.Debug import debug
@@ -57,8 +56,9 @@ class Camera(ASystem):
             iso_cam_y = (pos.x + pos.y) / 2 + offset.y
 
             x += (x - iso_cam_x)
-            y += (y - iso_cam_y) - t.position.z
+            y += (y - iso_cam_y)
 
+            y -= t.position.z
             # Scale to world
             x *= world_scale / 2
             y *= world_scale / 2
@@ -102,7 +102,7 @@ class Camera(ASystem):
         # Top corner of tile
         x = t.screen.x
         y = t.screen.y
-        pygame.gfxdraw.filled_polygon(self.screen, [
+        pygame.gfxdraw.polygon(self.screen, [
             (x, y),
             (x + box_width, y + box_width / 2),
             (x, y + box_width),
@@ -114,7 +114,7 @@ class Camera(ASystem):
         top_color = t.color
 
         # X face
-        pygame.gfxdraw.filled_polygon(self.screen, [
+        pygame.gfxdraw.polygon(self.screen, [
             (x, y + box_width),
             (x, y - box_height),
             (x + box_width, y + box_width / 2 - box_height),
@@ -122,7 +122,7 @@ class Camera(ASystem):
         ], t.color)
 
         # Y Face
-        pygame.gfxdraw.filled_polygon(self.screen, [
+        pygame.gfxdraw.polygon(self.screen, [
             (x, y + box_width),
             (x, y - box_height),
             (x - box_width, y + box_width / 2 - box_height),
@@ -131,7 +131,7 @@ class Camera(ASystem):
 
 
 
-        pygame.gfxdraw.filled_polygon(self.screen, [
+        pygame.gfxdraw.polygon(self.screen, [
             (x, y - box_height),
             (x + box_width, y + box_width / 2 - box_height),
             (x, y + box_width - box_height),
@@ -189,6 +189,8 @@ class Camera(ASystem):
             offset.y -= (pos.z)
 
             visibles = store.visibles.get_list()
+            layers = {}
+            to_draw = []
             for visible in visibles:
                 chunk = visible._parent.get("Chunk")
                 if chunk:
@@ -200,11 +202,36 @@ class Camera(ASystem):
                     for t in transforms:
                         render = self.update_transform(t, pos, world, camera_info)
                         if render:
+                            if t._parent.get("Mesh"):
+                                if not layers.get(t.position.z):
+                                    layers[t.position.z] = []
+                                layers[t.position.z].append(t)
+                                to_draw.append(t)
                             self.render_transform(t, world)
                 else:
                     t = visible._parent.get("Transform")
                     if t and self.update_transform(t, pos, world, camera_info):
+                        if not layers.get(t.position.z):
+                            layers[t.position.z] = []
                         self.render_transform(t, world)
+            
+            for alive in store.components("Alive"):
+                t = alive._parent.getUnsafe("Transform")
+                render = self.update_transform(t, pos, world, camera_info)
+                mesh = alive._parent.get("Mesh")
+                if render and mesh:
+                    if not layers.get(t.position.z):
+                        layers[t.position.z] = []
+                    layers[t.position.z].append(t)
+                    to_draw.append(t)
+            
+            ef = store.get('game').eventsFactory
+            em = store.get("game").event_manager
+            to_draw = sorted(to_draw, key=lambda t: t.position.x + t.scale.x + t.position.y + t.scale.y + t.position.z - t.scale.z)
+            em.emit(ef.build('drawMeshRequest', { 'transforms': to_draw }))
+            # for z, to_draw in sorted(layers.items(), key=lambda z: z[0]):           
+            #     to_draw = sorted(to_draw, key=lambda t: t.screen.y)
+            #     em.emit(ef.build("drawMeshRequest", { 'transforms': to_draw } ))
 
 
     def run(self, elapsed, events=None):

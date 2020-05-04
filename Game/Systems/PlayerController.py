@@ -71,7 +71,7 @@ class PlayerController(object):
         self.mouse_down = False
         self.keyboard = Keyboard()
         self.d = None
-
+        
     def run(self, elapsed, events):
         if self.mouse_clicked > 0:
             self.mouse_clicked -= 1
@@ -166,25 +166,28 @@ class PlayerController(object):
 
             
             d = self.d
+            previous = None
+            if player_alive.destination:
+                previous = Point(player_alive.destination.x, player_alive.destination.y)
             if self.keyboard.right_key.state == Quadstate.DOWN or self.keyboard.right_key.state == Quadstate.GOING_DOWN:
                 if not player_alive.destination:
                     player_alive.destination = Point(t.position.x, t.position.y)
-                player_alive.destination.x += 1
-                player_alive.destination.y -= 1
+                player_alive.destination.x += 0.1
+                player_alive.destination.y -= 0.1
                 d = 'r'
                 
             if self.keyboard.left_key.state == Quadstate.DOWN or self.keyboard.left_key.state == Quadstate.GOING_DOWN:
                 if not player_alive.destination:
                     player_alive.destination = Point(t.position.x, t.position.y)
-                player_alive.destination.x -= 1
-                player_alive.destination.y += 1
+                player_alive.destination.x -= 0.1
+                player_alive.destination.y += 0.1
                 d = 'l'
 
             if self.keyboard.up_key.state == Quadstate.DOWN or self.keyboard.up_key.state == Quadstate.GOING_DOWN:
                 if not player_alive.destination:
                     player_alive.destination = Point(t.position.x, t.position.y)
-                player_alive.destination.x -= 1
-                player_alive.destination.y -= 1
+                player_alive.destination.x -= 0.1
+                player_alive.destination.y -= 0.1
                 if d == 'r':
                     d = 'tr'
                 elif d == 'l':
@@ -195,14 +198,20 @@ class PlayerController(object):
             if self.keyboard.down_key.state == Quadstate.DOWN or self.keyboard.down_key.state == Quadstate.GOING_DOWN:
                 if not player_alive.destination:
                     player_alive.destination = Point(t.position.x, t.position.y)
-                player_alive.destination.x += 1
-                player_alive.destination.y += 1
+                player_alive.destination.x += 0.1
+                player_alive.destination.y += 0.1
                 if d == 'r':
                     d = 'br'
                 elif d == 'l':
                     d = 'bl'
                 else:
                     d = 'b'
+
+            if player_alive.destination:
+                dist = t.position.distance(player_alive.destination)
+                if dist > 0.3 and previous:
+                    player_alive.destination.x = previous.x
+                    player_alive.destination.y = previous.y
 
             mesh = self.player.get("Mesh")
             if mesh:
@@ -252,6 +261,7 @@ class PlayerController(object):
                     speed_multiplier = 1.75 if alive.sprint else 1
                     t = entity.components.get("Transform")
                     if t:
+                        saved = Point(t.position.x, t.position.y)
                         if alive.destination.x != t.position.x:
                             diff = alive.destination.x - t.position.x
                             if diff > 0:
@@ -271,9 +281,9 @@ class PlayerController(object):
                         world = worlds[0]
 
                         if t.position.x < 0:
-                            t.position.x = 0
+                            t.position.x = saved.x
                         if t.position.y < 0:
-                            t.position.y = 0
+                            t.position.y = saved.y
                         if t.position.x >= world.size.w:
                             t.position.x = world.size.w - 0.01
                         if t.position.y >= world.size.h:
@@ -282,13 +292,9 @@ class PlayerController(object):
                         #point = self.camera.to_screen(alive.destination)
                         #pygame.draw.ellipse(self.game.screen, self.game.palette.black, [point.x - self.game.scale / 2, point.y - self.game.scale / 2, self.game.scale, self.game.scale], 2)
 
+                        dist = alive.destination.distance(t.position)
                         if abs(alive.destination.x - t.position.x) <= alive.attack_range and abs(alive.destination.y - t.position.y) <= alive.attack_range:
                             alive.destination = None
-
-        player_alive = self.player.components.get("Alive")
-        if player_alive and player_alive.destination:
-            pass
-            #point = self.camera.to_screen(player_alive.destination)
-            #pygame.draw.ellipse(self.game.screen, self.game.palette.black, [point.x - self.game.scale / 2, point.y - self.game.scale / 2, self.game.scale, self.game.scale], 2)
-        
+                            if alive.target:
+                                alive.target = None
 
